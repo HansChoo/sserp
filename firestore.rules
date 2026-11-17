@@ -1,0 +1,220 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidWorkspaceKey(key) {
+      return key is string && key == 'sserp_team_workspace';
+    }
+
+    function hasValidOwnershipAndTimestamps(data, isCreate) {
+      return isValidWorkspaceKey(data.workspaceKey)
+        && data.ownerUid is string
+        && data.ownerUid.size() >= 1
+        && data.ownerUid.size() <= 128
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (
+          isCreate
+            ? (data.ownerUid == request.auth.uid && data.createdAt == request.time && data.updatedAt == request.time)
+            : (data.ownerUid == existing().ownerUid && data.workspaceKey == existing().workspaceKey && data.createdAt == existing().createdAt && data.updatedAt == request.time)
+        );
+    }
+
+    // 3. Connection Verification Helper Document
+    match /test/{docId} {
+      allow get: if isSignedIn() && isValidId(docId);
+    }
+
+    // 4. Entity Validation Blueprints
+    function isValidEmployee(data, isCreate) {
+      return data.keys().hasAll([
+          'username', 'password', 'name', 'department', 'title',
+          'role', 'avatarUrl', 'workspaceKey', 'ownerUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'username', 'password', 'name', 'department', 'title',
+          'role', 'avatarUrl', 'workspaceKey', 'ownerUid', 'createdAt', 'updatedAt'
+        ])
+        && data.username is string && data.username.size() >= 2 && data.username.size() <= 32
+        && data.username.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.password is string && data.password.size() >= 4 && data.password.size() <= 64
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 40
+        && data.department is string && data.department.size() >= 1 && data.department.size() <= 40
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 40
+        && data.role in ['admin', 'member']
+        && data.avatarUrl is string && data.avatarUrl.size() <= 300
+        && hasValidOwnershipAndTimestamps(data, isCreate);
+    }
+
+    function isValidTask(data, isCreate) {
+      return data.keys().hasAll([
+          'title', 'description', 'assigneeId', 'creatorId', 'priority',
+          'status', 'startDate', 'dueDate', 'subtasks', 'progress',
+          'workspaceKey', 'ownerUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'title', 'description', 'assigneeId', 'creatorId', 'priority',
+          'status', 'startDate', 'dueDate', 'subtasks', 'progress',
+          'workspaceKey', 'ownerUid', 'createdAt', 'updatedAt'
+        ])
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 160
+        && data.description is string && data.description.size() <= 2000
+        && isValidId(data.assigneeId)
+        && isValidId(data.creatorId)
+        && data.priority in ['high', 'medium', 'low']
+        && data.status in ['todo', 'in_progress', 'done']
+        && data.startDate is string && data.startDate.size() == 10 && data.startDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.dueDate is string && data.dueDate.size() == 10 && data.dueDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.subtasks is list && data.subtasks.size() <= 30
+        && (data.subtasks.size() == 0 || data.subtasks[0] is map)
+        && data.progress is number && data.progress >= 0 && data.progress <= 100
+        && hasValidOwnershipAndTimestamps(data, isCreate);
+    }
+
+    function isValidAttendanceLog(data, isCreate) {
+      return data.keys().hasAll([
+          'employeeId', 'employeeName', 'date', 'checkInAt', 'checkOutAt',
+          'durationMinutes', 'status', 'workspaceKey', 'ownerUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'employeeId', 'employeeName', 'date', 'checkInAt', 'checkOutAt',
+          'durationMinutes', 'status', 'workspaceKey', 'ownerUid', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.employeeId)
+        && data.employeeName is string && data.employeeName.size() >= 1 && data.employeeName.size() <= 40
+        && data.date is string && data.date.size() == 10 && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.checkInAt is timestamp
+        && (data.checkOutAt == null || data.checkOutAt is timestamp)
+        && data.durationMinutes is number && data.durationMinutes >= 0 && data.durationMinutes <= 1440
+        && data.status in ['active', 'completed']
+        && hasValidOwnershipAndTimestamps(data, isCreate);
+    }
+
+    function isValidTaskActivity(data, isCreate) {
+      return data.keys().hasAll([
+          'taskId', 'authorId', 'authorName', 'type', 'message',
+          'workspaceKey', 'ownerUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'taskId', 'authorId', 'authorName', 'type', 'message',
+          'workspaceKey', 'ownerUid', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.taskId)
+        && isValidId(data.authorId)
+        && data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 40
+        && data.type in ['comment', 'status_change', 'subtask_toggle', 'deadline_change', 'created']
+        && data.message is string && data.message.size() >= 1 && data.message.size() <= 1000
+        && hasValidOwnershipAndTimestamps(data, isCreate);
+    }
+
+    function isValidWorkspaceSetting(data, isCreate) {
+      return data.keys().hasAll([
+          'noticeText', 'updatedBy', 'workspaceKey', 'ownerUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'noticeText', 'updatedBy', 'workspaceKey', 'ownerUid', 'createdAt', 'updatedAt'
+        ])
+        && data.noticeText is string && data.noticeText.size() <= 200
+        && data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 40
+        && hasValidOwnershipAndTimestamps(data, isCreate);
+    }
+
+    // 5. Collection Match Blocks
+    match /employees/{employeeId} {
+      allow get: if isSignedIn() && isValidId(employeeId) && isValidWorkspaceKey(existing().workspaceKey);
+      allow list: if isSignedIn() && isValidWorkspaceKey(resource.data.workspaceKey);
+      allow create: if isSignedIn() && isValidId(employeeId) && isValidEmployee(incoming(), true);
+      allow update: if isSignedIn()
+        && isValidId(employeeId)
+        && isValidEmployee(incoming(), false)
+        && isValidWorkspaceKey(existing().workspaceKey)
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'password', 'department', 'title', 'role', 'avatarUrl', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(employeeId) && isValidWorkspaceKey(existing().workspaceKey);
+    }
+
+    match /tasks/{taskId} {
+      allow get: if isSignedIn() && isValidId(taskId) && isValidWorkspaceKey(existing().workspaceKey);
+      allow list: if isSignedIn() && isValidWorkspaceKey(resource.data.workspaceKey);
+      allow create: if isSignedIn()
+        && isValidId(taskId)
+        && isValidTask(incoming(), true)
+        && exists(/databases/$(database)/documents/employees/$(incoming().assigneeId));
+      allow update: if isSignedIn()
+        && isValidId(taskId)
+        && isValidTask(incoming(), false)
+        && isValidWorkspaceKey(existing().workspaceKey)
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'assigneeId', 'priority', 'status', 'startDate', 'dueDate', 'subtasks', 'progress', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['subtasks', 'progress', 'status', 'updatedAt'])
+        );
+      allow delete: if isSignedIn() && isValidId(taskId) && isValidWorkspaceKey(existing().workspaceKey);
+    }
+
+    match /attendanceLogs/{logId} {
+      allow get: if isSignedIn() && isValidId(logId) && isValidWorkspaceKey(existing().workspaceKey);
+      allow list: if isSignedIn() && isValidWorkspaceKey(resource.data.workspaceKey);
+      allow create: if isSignedIn()
+        && isValidId(logId)
+        && isValidAttendanceLog(incoming(), true)
+        && incoming().status == 'active'
+        && incoming().checkInAt == request.time
+        && incoming().checkOutAt == null
+        && exists(/databases/$(database)/documents/employees/$(incoming().employeeId));
+      allow update: if isSignedIn()
+        && isValidId(logId)
+        && isValidAttendanceLog(incoming(), false)
+        && isValidWorkspaceKey(existing().workspaceKey)
+        && existing().status == 'active'
+        && incoming().status == 'completed'
+        && incoming().checkInAt == existing().checkInAt
+        && incoming().checkOutAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['checkOutAt', 'durationMinutes', 'status', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(logId) && isValidWorkspaceKey(existing().workspaceKey);
+    }
+
+    match /taskActivities/{activityId} {
+      allow get: if isSignedIn() && isValidId(activityId) && isValidWorkspaceKey(existing().workspaceKey);
+      allow list: if isSignedIn() && isValidWorkspaceKey(resource.data.workspaceKey);
+      allow create: if isSignedIn()
+        && isValidId(activityId)
+        && isValidTaskActivity(incoming(), true)
+        && exists(/databases/$(database)/documents/tasks/$(incoming().taskId));
+      allow update: if false;
+      allow delete: if isSignedIn() && isValidId(activityId) && isValidWorkspaceKey(existing().workspaceKey);
+    }
+
+    match /workspaceSettings/{settingId} {
+      allow get: if isSignedIn() && isValidId(settingId) && isValidWorkspaceKey(existing().workspaceKey);
+      allow list: if isSignedIn() && isValidWorkspaceKey(resource.data.workspaceKey);
+      allow create: if isSignedIn() && isValidId(settingId) && isValidWorkspaceKey(incoming().workspaceKey) && isValidWorkspaceSetting(incoming(), true);
+      allow update: if isSignedIn()
+        && isValidId(settingId)
+        && isValidWorkspaceSetting(incoming(), false)
+        && isValidWorkspaceKey(existing().workspaceKey)
+        && incoming().diff(existing()).affectedKeys().hasOnly(['noticeText', 'updatedBy', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(settingId) && isValidWorkspaceKey(existing().workspaceKey);
+    }
+  }
+}

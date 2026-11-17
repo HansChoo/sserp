@@ -1,0 +1,6 @@
+{
+  "name": "TeamPulse ERP",
+  "description": "10명 이하 소규모 팀을 위한 실시간 사내 스케줄러, PM 타임라인 대시보드 및 자동 출퇴근 관리 ERP",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

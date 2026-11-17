@@ -1,0 +1,420 @@
+{
+  "entities": {
+    "Employee": {
+      "title": "Employee",
+      "description": "Pre-registered company team member or PM account used for ID/PW sign-in inside the workspace.",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 32,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique employee login ID."
+        },
+        "password": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 64,
+          "description": "Employee login password managed by PM admin."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Employee display name."
+        },
+        "department": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Team or department name."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Job title."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "member"],
+          "description": "Role within the ERP: admin (PM) or member."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Optional static avatar path or empty string for monogram."
+        },
+        "workspaceKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Shared company workspace identifier."
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Firebase Auth UID of the creator."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "username",
+        "password",
+        "name",
+        "department",
+        "title",
+        "role",
+        "avatarUrl",
+        "workspaceKey",
+        "ownerUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Scheduled work item with subtasks, deadline, assignee, and computed progress.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "description": "Task title."
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Detailed task instructions."
+        },
+        "assigneeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Target employee document ID."
+        },
+        "creatorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Creator employee document ID."
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["high", "medium", "low"],
+          "description": "Task priority."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["todo", "in_progress", "done"],
+          "description": "Current workflow state."
+        },
+        "startDate": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "minLength": 10,
+          "maxLength": 10,
+          "description": "Task start date (YYYY-MM-DD)."
+        },
+        "dueDate": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "minLength": 10,
+          "maxLength": 10,
+          "description": "Task deadline date (YYYY-MM-DD)."
+        },
+        "subtasks": {
+          "type": "array",
+          "description": "Checklist of subtasks (max 30 items)."
+        },
+        "progress": {
+          "type": "number",
+          "description": "Completion percentage (0-100)."
+        },
+        "workspaceKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Shared company workspace identifier."
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Firebase Auth UID of the creator."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "title",
+        "description",
+        "assigneeId",
+        "creatorId",
+        "priority",
+        "status",
+        "startDate",
+        "dueDate",
+        "subtasks",
+        "progress",
+        "workspaceKey",
+        "ownerUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AttendanceLog": {
+      "title": "AttendanceLog",
+      "description": "Employee check-in and check-out record created automatically on login and logout.",
+      "type": "object",
+      "properties": {
+        "employeeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Employee document ID."
+        },
+        "employeeName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Employee display name snapshot."
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "minLength": 10,
+          "maxLength": 10,
+          "description": "Attendance date (YYYY-MM-DD)."
+        },
+        "checkInAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server check-in timestamp."
+        },
+        "checkOutAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server check-out timestamp or null while active."
+        },
+        "durationMinutes": {
+          "type": "number",
+          "description": "Total worked minutes."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "completed"],
+          "description": "Whether the employee is currently checked in or checked out."
+        },
+        "workspaceKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Shared company workspace identifier."
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Firebase Auth UID of the creator."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "employeeId",
+        "employeeName",
+        "date",
+        "checkInAt",
+        "durationMinutes",
+        "status",
+        "workspaceKey",
+        "ownerUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "TaskActivity": {
+      "title": "TaskActivity",
+      "description": "Slack-style comment or automatic progress/deadline history entry on a task.",
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent task document ID."
+        },
+        "authorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Author employee document ID."
+        },
+        "authorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Author display name."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["comment", "status_change", "subtask_toggle", "deadline_change", "created"],
+          "description": "Activity entry category."
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "description": "Comment body or system log description."
+        },
+        "workspaceKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Shared company workspace identifier."
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Firebase Auth UID of the creator."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "taskId",
+        "authorId",
+        "authorName",
+        "type",
+        "message",
+        "workspaceKey",
+        "ownerUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "WorkspaceSetting": {
+      "title": "WorkspaceSetting",
+      "description": "Pinned single-line team notice displayed at the top of the workspace.",
+      "type": "object",
+      "properties": {
+        "noticeText": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Pinned team announcement text."
+        },
+        "updatedBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Name of PM who last updated the pinned notice."
+        },
+        "workspaceKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Shared company workspace identifier."
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Firebase Auth UID of the creator."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "noticeText",
+        "updatedBy",
+        "workspaceKey",
+        "ownerUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/employees/{employeeId}": {
+      "schema": {
+        "$ref": "#/entities/Employee"
+      },
+      "description": "Pre-registered company employee accounts."
+    },
+    "/tasks/{taskId}": {
+      "schema": {
+        "$ref": "#/entities/Task"
+      },
+      "description": "Scheduled tasks with subtasks and deadlines."
+    },
+    "/attendanceLogs/{logId}": {
+      "schema": {
+        "$ref": "#/entities/AttendanceLog"
+      },
+      "description": "Employee check-in and check-out logs."
+    },
+    "/taskActivities/{activityId}": {
+      "schema": {
+        "$ref": "#/entities/TaskActivity"
+      },
+      "description": "Slack-style comments and change history for tasks."
+    },
+    "/workspaceSettings/{settingId}": {
+      "schema": {
+        "$ref": "#/entities/WorkspaceSetting"
+      },
+      "description": "Global workspace pinned team notice."
+    }
+  }
+}
